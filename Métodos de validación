@@ -1,0 +1,64 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split, KFold, LeaveOneOut
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import accuracy_score
+from sklearn.datasets import load_iris
+
+# Función para cargar el dataset Iris
+def cargar_dataset_iris():
+    dataset = load_iris()
+    X = pd.DataFrame(dataset.data, columns=dataset.feature_names)
+    y = pd.Series(dataset.target)
+    return X, y
+
+# Método de validación Hold-Out (el usuario especifica r)
+def hold_out(X, y, r):
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=r, random_state=42)
+    return X_train, X_test, y_train, y_test
+
+# Método de validación K-Fold Cross-Validation (el usuario especifica K)
+def k_fold_cross_validation(X, y, K):
+    kf = KFold(n_splits=K)
+    accuracies = []
+    for train_index, test_index in kf.split(X):
+        X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+        y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+        accuracies.append(evaluar_clasificador(X_train, X_test, y_train, y_test))
+    return sum(accuracies) / len(accuracies)
+
+# Método de validación Leave-One-Out Cross-Validation
+def leave_one_out(X, y):
+    loo = LeaveOneOut()
+    accuracies = []
+    for train_index, test_index in loo.split(X):
+        X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+        y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+        accuracies.append(evaluar_clasificador(X_train, X_test, y_train, y_test))
+    return sum(accuracies) / len(accuracies)
+
+# Función para evaluar el clasificador K-Nearest Neighbors
+def evaluar_clasificador(X_train, X_test, y_train, y_test):
+    clf = KNeighborsClassifier()
+    clf.fit(X_train, y_train)
+    y_pred = clf.predict(X_test)
+    return accuracy_score(y_test, y_pred)
+
+# Cargar el dataset Iris
+X, y = cargar_dataset_iris()
+
+# Hold-Out con r = 0.2 (20% para el conjunto de prueba)
+r = 0.2
+X_train, X_test, y_train, y_test = hold_out(X, y, r)
+hold_out_accuracy = evaluar_clasificador(X_train, X_test, y_train, y_test)
+
+# K-Fold Cross-Validation con K=5
+K = 5
+k_fold_accuracy = k_fold_cross_validation(X, y, K)
+
+# Leave-One-Out Cross-Validation
+loo_accuracy = leave_one_out(X, y)
+
+# Resultados
+print(f"Precisión Hold-Out: {hold_out_accuracy:.2f}")
+print(f"Precisión K-Fold Cross-Validation (K={K}): {k_fold_accuracy:.2f}")
+print(f"Precisión Leave-One-Out: {loo_accuracy:.2f}")
